@@ -2,11 +2,12 @@
 	> File Name: http_conn.cpp
 	> Author: WishSun
 	> Mail: WishSun_Cn@163.com
-	> Created Time: 2018年07月03日 星期二 19时39分30秒
+	> Created Time: 2018年04月15日 星期日 19时39分30秒
  ************************************************************************/
 #include "../../inc/http_conn.h"
 #include <string.h>
 #include <sys/wait.h>
+
 /* 定义一些HTTP响应的一些状态信息*/
 const char *ok_200_title = "OK";
 const char *error_400_title = "Bad Request";
@@ -140,6 +141,8 @@ void http_conn::init()
     m_checked_idx = 0;
     m_read_idx = 0;
     m_write_idx = 0;
+    m_bytes_to_send = 0;
+    m_bytes_have_send = 0;
     memset( m_read_buf, '\0', READ_BUFFER_SIZE );
     memset( m_write_buf, '\0', WRITE_BUFFER_SIZE );
     memset( m_read_file, '\0', FILENAME_LEN );
@@ -565,22 +568,37 @@ void http_conn::unmap()
 bool http_conn::write_response()
 {
     int temp = 0;
-    /* 已经发送的字节数*/
-    int bytes_have_send = 0;
-    /* 将要发送的字节数*/
-    int bytes_to_send = m_write_idx;
 
     /* 如果没有要发送的数据了，那么可以再去获取客户端请求了*/
-    if ( bytes_to_send == 0 )
+    if ( m_bytes_to_send == 0 )
     {
         modfd( m_epollfd, m_sockfd, EPOLLIN );
         init();
         return true;
     }
+
+    /* 一定保证将响应头在这成功发送*/
+    int bytes_have_send = 0;
+    int bytes_to_send = m_write_idx;
+    while( bytes_have_send < bytes_to_send )
+    {
+        temp = write(m_sockfd, m_write_buf, m_write_idx);
+        if( temp == -1 )
+        {
+            if ( errno == EAGAIN || errno == EWOULDBLOCK )
+            {
+                continue;
+            }
+        }
+        bytes_have_send += temp;
+    }
+    m_write_idx = 0;
+
+
+    /* 发送响应文件体, 可能本次发送不完，需要等待EPOLLOUT事件*/
     while( 1 )
     {
-        /* 将m_iv数组中内容集中写到客户端连接*/
-        temp = writev( m_sockfd, m_iv, m_iv_count );
+        temp = write(m_sockfd, m_file_address + m_bytes_have_send, m_file_stat.st_size);
         if ( temp <= -1 )
         {
             /* 如果TCP写缓冲没有空间，则等待下一轮 EPOLLOUT 事件。
@@ -595,13 +613,18 @@ bool http_conn::write_response()
             unmap();
             return false;
         }
-        /* 更新 bytes_to_send 和 bytes_have_send 的值*/
-        bytes_to_send -= temp;
-        bytes_have_send += temp;
+
+        /* 更新 m_bytes_to_send 和 m_bytes_have_send 的值*/
+        m_bytes_to_send -= temp;
+        m_bytes_have_send += temp;
 
         /* 如果写完了, 就去监听EPOLLIN，不再监听EPOLLOUT事件了*/
-        if ( bytes_to_send <= bytes_have_send )
+        if ( m_bytes_to_send <= m_bytes_have_send )
         {
+            /* 将记录置空*/
+            m_bytes_have_send = 0;
+            m_bytes_to_send = 0;
+
             /* 发送HTTP响应成功，根据HTTP请求中的Connection字段决定是否
              * 立即关闭连接
              */
@@ -735,11 +758,8 @@ bool http_conn::process_write( HTTP_CODE ret )
             if ( m_file_stat.st_size != 0 )
             {
                 add_headers( m_file_stat.st_size );
-                m_iv[ 0 ].iov_base = m_write_buf;       /*m_iv[0] 存放响应头信息*/
-                m_iv[ 0 ].iov_len = m_write_idx;
-                m_iv[ 1 ].iov_base = m_file_address;    /*m_iv[1] 存放消息体(文件内容)*/
-                m_iv[ 1 ].iov_len = m_file_stat.st_size;
-                m_iv_count = 2;
+                m_bytes_to_send = m_file_stat.st_size;
+               
                 return true;
             }
             /* 如果文件为空文件的话，则构造一个空html网页*/
@@ -758,9 +778,6 @@ bool http_conn::process_write( HTTP_CODE ret )
             return false;       
         }
     }
-    m_iv[ 0 ].iov_base = m_write_buf;
-    m_iv[ 0 ].iov_len = m_write_idx;
-    m_iv_count = 1;
     return true;
 }
 

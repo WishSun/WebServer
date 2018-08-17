@@ -2,7 +2,7 @@
 	> File Name: http_conn.h
 	> Author: WishSun
 	> Mail: WishSun_Cn@163.com
-	> Created Time: 2018年07月03日 星期二 18时44分50秒
+	> Created Time: 2018年04月15日 星期日 18时44分50秒
  ************************************************************************/
 
 #ifndef _HTTP_CONN_H
@@ -141,6 +141,11 @@ private:
     /* 写缓冲区中待发送的字节数*/
     int m_write_idx;
 
+    /* 本次响应已经发送的字节数*/
+    int m_bytes_have_send;
+    /* 本次响应将要发送的字节数*/
+    int m_bytes_to_send;
+
     /* 主状态机当前所处的状态*/ 
     CHECK_STATE m_check_state;
     /* 请求方法*/
@@ -163,15 +168,6 @@ private:
     char *m_file_address;
     /* 目标文件的状态。通过它我们可以判断文件是否存在、是否为目录、是否可读，并获取文件大小等信息*/
     struct stat m_file_stat;
-    /* 我们将曹勇writev来执行写操作，所以定义下面两个成员，其中m_iv_count表示被写内存块的数量
-     * struct iovec
-     * {
-     *      void *iov_base;    内存起始地址
-     *      size_t iov_len;    这块内存的长度
-     * }
-     */
-    struct iovec m_iv[2];
-    int m_iv_count;
 };
 
 #endif
