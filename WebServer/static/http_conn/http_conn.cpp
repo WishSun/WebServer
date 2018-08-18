@@ -362,6 +362,12 @@ http_conn::HTTP_CODE http_conn::parse_headers( char *text )
 /* 解析消息体，即解析post请求的参数*/
 http_conn::HTTP_CODE http_conn::parse_content( char *text )
 {
+    /* 请求不完整，还有数据未获取完*/
+    if( m_read_idx < ( m_content_length + m_checked_idx ) )
+    {
+        return NO_REQUEST;
+    }
+
     int fa_To_ch[2];   /* 父进程往子进程送数据*/
     int ch_To_fa[2];   /* 子进程往父进程送数据*/
     if( pipe(fa_To_ch) < 0 )
@@ -459,7 +465,6 @@ http_conn::HTTP_CODE http_conn::process_read()
 
         /* 将当前正在解析的行的起始位置设置为已读入的一个完整行的下一个位置, 为下个循环准备*/
         m_start_line = m_checked_idx;
-        //printf( "got 1 http line: %s\n", text );
         switch ( m_check_state )
         {
             case CHECK_STATE_REQUESTLINE:          /* 第一个状态: 分析请求行*/
@@ -486,13 +491,7 @@ http_conn::HTTP_CODE http_conn::process_read()
             }
             case CHECK_STATE_CONTENT:            /* 第三个状态: 分析消息体*/
             {
-                ret = parse_content( text );
-                if ( ret == GET_REQUEST )
-                {
-                    //return do_request();
-                }
-                line_status = LINE_OPEN;
-                break;
+                return parse_content( text );
             }
             default:
             {
@@ -515,7 +514,14 @@ http_conn::HTTP_CODE http_conn::do_request()
     get_root_path(html_path);
     strcpy( m_read_file, html_path );
     int len = strlen( html_path );
-    strncpy( m_read_file + len, m_url, FILENAME_LEN - len - 1 );
+    if( strcasecmp(m_url, "/") == 0 )
+    {
+        strncpy( m_read_file + len, "/index.html", FILENAME_LEN - len - 1 );
+    }
+    else
+    {
+        strncpy( m_read_file + len, m_url, FILENAME_LEN - len - 1 );
+    }
 
     /* 获取文件的属性*/
     if ( stat( m_read_file, &m_file_stat ) < 0 )

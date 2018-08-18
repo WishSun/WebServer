@@ -98,7 +98,7 @@ bool calc_arg(char *buff)
 
 int main(void)
 {
-    char buff[1024];
+    char buff[1024] = {0};
 
     get_arg(buff);
     calc_arg(buff);
