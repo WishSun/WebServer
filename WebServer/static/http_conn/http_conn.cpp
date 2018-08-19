@@ -147,7 +147,7 @@ void http_conn::init()
     memset( m_write_buf, '\0', WRITE_BUFFER_SIZE );
     memset( m_read_file, '\0', FILENAME_LEN );
 }
-/* 从状态机*/
+/* 解析行，即判断有没读到一个完整的行(遇到空行\r\n)*/
 http_conn::LINE_STATUS http_conn::parse_line()
 {
     char temp;
@@ -203,7 +203,7 @@ http_conn::LINE_STATUS http_conn::parse_line()
     return LINE_OPEN;
 }
 
-/* 循环读取客户数据， 直到无数据可读或者对方关闭连接*/
+/* 读取客户数据，直到无数据可读*/
 bool http_conn::read_request()
 {
     if( m_read_idx >= READ_BUFFER_SIZE )
@@ -214,7 +214,7 @@ bool http_conn::read_request()
     while( true )
     {
         /* 由于m_sockfd是非阻塞的，所以本次调用不会阻塞*/
-        bytes_read = recv( m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0 );
+        bytes_read = read( m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx );
         /* 如果调用返回-1，错误代码为  EAGAIN | EWOULDBLOCK,
          * 并不是因为数据出错,是因为在非阻塞模式下调用了阻塞操作，而操作未完成导致的。
          * 其他的错误代码说明是数据出错
@@ -304,7 +304,7 @@ http_conn::HTTP_CODE http_conn::parse_request_line( char *text )
     {
         return BAD_REQUEST;
     }
-    /* 请求行已分析完毕，接下来就要开始分析头部字段，所以主状态机的状态迁移为CHECK_STATE_HEADER*/
+    /* 请求行已分析完毕，接下来就要开始分析头部字段，所以状态迁移为CHECK_STATE_HEADER*/
     m_check_state = CHECK_STATE_HEADER;
     /* 返回NO_REQUEST, 表示请求还未分析完，因为头部字段还未分析*/
     return NO_REQUEST;
@@ -440,7 +440,7 @@ http_conn::HTTP_CODE http_conn::parse_content( char *text )
     }
 }
 
-/* 主状态机*/
+/* 主状态机, 读取完整的行后分析各个部分*/
 http_conn::HTTP_CODE http_conn::process_read()
 {
     LINE_STATUS line_status = LINE_OK;

@@ -61,7 +61,7 @@ void addsig( int sig, void( handler )(int), bool restart = true )
 void show_error( int connfd, const char *info )
 {
     printf( "%s", info );
-    send( connfd, info, strlen( info ), 0 );
+    write( connfd, info, strlen( info ) );
     close( connfd );
 }
 
