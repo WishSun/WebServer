@@ -163,6 +163,9 @@ int main(int argc, char* argv[])
     inet_pton( AF_INET, ip, &address.sin_addr );
     address.sin_port = htons( port );
 
+    int op = 1;
+    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &op, sizeof(op));
+
     /* 绑定监听套接字到指定地址和端口*/
     ret = bind( listenfd, ( struct sockaddr* )&address, sizeof( address ) );
     assert( ret >= 0 );

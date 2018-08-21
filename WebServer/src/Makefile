@@ -3,7 +3,7 @@ OBJ=$(patsubst %.cpp, %.o, $(SRC))
 BIN=./server
 
 $(BIN):$(OBJ)
-	g++ $^ -o $@  -L../lib -lpthread  -lhttp_conn  -lparse_configure_file  -lconfig
+	g++ $^ -o $@  -L../lib -lpthread -lparse_configure_file  -lconfig
 ./%.o:./%.cpp
 	g++ -c $< -o $@ -g 
 

@@ -1,6 +1,5 @@
 target:
 	#生成静态库
-	make -C ./static/http_conn/
 	make -C ./static/parse_cfg/
 	#生成可执行程序
 	make -C ./src/
@@ -15,5 +14,4 @@ uninstall:
 .PHONY:clean
 clean:
 	make clean -C ./src/
-	make clean -C ./static/http_conn/
 	make clean -C ./static/parse_cfg/
