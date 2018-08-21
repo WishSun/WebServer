@@ -409,7 +409,7 @@ http_conn::HTTP_CODE http_conn::parse_content( char *text )
         close(ch_To_fa[0]);
         dup2(ch_To_fa[1], STDOUT_FILENO);
 
-        execl(cgi_path, cgi_path, NULL);
+        execl(cgi_path, "calc_cgi", NULL);
         exit(1);
     }
     /* 父进程*/

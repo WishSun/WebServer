@@ -40,17 +40,11 @@ extern int addfd( int epollfd, int fd, bool one_shot );
 extern int removefd( int epollfd, int fd );
 
 /* 注册信号及其信号处理函数*/
-void addsig( int sig, void( handler )(int), bool restart = true )
+void addsig( int sig, void( handler )(int) )
 {
     struct sigaction sa;
     memset( &sa, '\0', sizeof( sa ) );
     sa.sa_handler = handler;
-
-    /* restart 标志是: 重新调用被该信号终止的系统调用*/
-    if( restart )
-    {
-        sa.sa_flags |= SA_RESTART;
-    }
 
     /* 该信号的信号处理函数执行期间屏蔽一切信号*/
     sigfillset( &sa.sa_mask );
@@ -161,8 +155,6 @@ int main(int argc, char* argv[])
     /* 创建监听套接字*/
     int listenfd = socket( PF_INET, SOCK_STREAM, 0 );
     assert( listenfd >= 0 );
-    struct linger tmp = {1, 0};
-    setsockopt( listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof( tmp ) );
     
     int ret = 0;
     struct sockaddr_in address;
