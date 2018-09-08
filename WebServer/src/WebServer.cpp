@@ -140,18 +140,6 @@ int main(int argc, char* argv[])
     /* 创建线程池*/
     threadpool< http_conn > *pool = Singleton< threadpool< http_conn > >::GetInstance();
 
-    /*
-    threadpool< http_conn > *pool = NULL;
-    try
-    {
-        pool = new threadpool<http_conn>;
-    }
-    catch( ... )
-    {
-        return 1;
-    }
-    */
-
     /* 预先为每个可能的客户连接分配一个http_conn对象*/
     http_conn *users = new http_conn[ MAX_FD ];
     assert( users );
@@ -222,11 +210,6 @@ int main(int argc, char* argv[])
                 users[ connfd ].init( connfd, client_address );
             }
 
-            /* 如果有异常发生, 直接关闭连接*/
-            else if( events[i].events & ( EPOLLRDHUP | EPOLLHUP | EPOLLERR ) )
-            {
-                users[sockfd].close_conn();
-            }
 
             /* 客户端有数据到来*/
             else if( events[i].events & EPOLLIN )
@@ -242,6 +225,7 @@ int main(int argc, char* argv[])
                 }
             }
 
+            /* 可写*/
             else if( events[ i ].events & EPOLLOUT )
             {
                 /* 客户端连接已经可写，这时，将对客户端的响应写到客户端连接中*/
@@ -252,8 +236,11 @@ int main(int argc, char* argv[])
                 }
             }
 
-            else
-            { }
+            /* 如果有异常发生, 直接关闭连接*/
+            else 
+            {
+                users[sockfd].close_conn();
+            }
         }
     }
 

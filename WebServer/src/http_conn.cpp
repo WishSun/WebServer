@@ -56,7 +56,7 @@ int setnonblocking( int fd )
     return old_option;
 }
 /* 将描述符fd添加到内核事件监听表epollfd中
- * EPOLLRDHUP 事件: 我们期望一个socket连接在任一时刻都只被一个线程处理
+ * EPOLLONESHOT事件: 我们期望一个socket连接在任一时刻都只被一个线程处理
  *            对于注册了EPOLLONESHOT事件的文件描述符，操作系统最多触发
  *            其上注册的一个可读、可写或者异常事件，且只触发一次，除非
  *            我们使用epoll_ctl函数重置还文件描述符上注册的EPOLLONESHOT
@@ -72,8 +72,8 @@ void addfd( int epollfd, int fd, bool one_shot )
 {
     epoll_event event;
     event.data.fd = fd;
-    /* 检测可读事件，指定为边缘触发，而且指定EPOLLDHUP(TCP连接被对方关闭)*/
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;   
+    /* 检测可读事件，指定为边缘触发*/
+    event.events = EPOLLIN | EPOLLET;
     if( one_shot )
     {
         event.events |= EPOLLONESHOT;
@@ -94,7 +94,7 @@ void modfd(int epollfd, int fd, int ev)
 {
     epoll_event event;
     event.data.fd = fd;
-    event.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
+    event.events = ev | EPOLLET | EPOLLONESHOT;
     epoll_ctl( epollfd, EPOLL_CTL_MOD, fd, &event );
 }
 
