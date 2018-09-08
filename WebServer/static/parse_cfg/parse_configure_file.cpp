@@ -12,7 +12,7 @@
 #include <malloc.h>
 #include <string.h>
 
-#include "../../inc/parse_configure_file.h"
+#include "./parse_configure_file.h"
 
 
 /* 操作配置文件的全局句柄*/

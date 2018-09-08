@@ -17,10 +17,11 @@
 #include <cassert>
 #include <sys/epoll.h>
 
-#include "../inc/locker.h"
-#include "../inc/threadpool.h"
-#include "../inc/http_conn.h"
-#include "../inc/parse_configure_file.h"
+#include "./locker.h"
+#include "./threadpool.h"
+#include "./http_conn.h"
+#include "../static/parse_cfg/parse_configure_file.h"
+#include "./Singleton.h"
 
 
 #define MAX_FD 65536
@@ -137,15 +138,19 @@ int main(int argc, char* argv[])
     addsig( SIGPIPE, SIG_IGN );
 
     /* 创建线程池*/
+    threadpool< http_conn > *pool = Singleton< threadpool< http_conn > >::GetInstance();
+
+    /*
     threadpool< http_conn > *pool = NULL;
     try
     {
-        pool = new threadpool< http_conn >;
+        pool = new threadpool<http_conn>;
     }
     catch( ... )
     {
         return 1;
     }
+    */
 
     /* 预先为每个可能的客户连接分配一个http_conn对象*/
     http_conn *users = new http_conn[ MAX_FD ];
@@ -153,7 +158,7 @@ int main(int argc, char* argv[])
     int user_count = 0;
 
     /* 创建监听套接字*/
-    int listenfd = socket( PF_INET, SOCK_STREAM, 0 );
+    int listenfd = socket( AF_INET, SOCK_STREAM, 0 );
     assert( listenfd >= 0 );
     
     int ret = 0;
