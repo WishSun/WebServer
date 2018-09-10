@@ -791,6 +791,13 @@ void http_conn::process()
         modfd( m_epollfd, m_sockfd, EPOLLIN );
         return;
     }
+
+    /* 因为POST请求已经在子进程中处理了，这一块则直接返回，继续监听下一个请求*/
+    if( m_method == POST )
+    {
+        modfd( m_epollfd, m_sockfd, EPOLLIN );
+        return;
+    }
     /* 根据服务器对客户端请求的结果，向写缓冲写入对客户端回复响应*/
     bool write_ret = process_write( read_ret );
     if ( ! write_ret )
