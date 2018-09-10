@@ -5,8 +5,7 @@
     etc:配置文件目录
     lib:静态库文件目录
     static:静态库源文件目录
-    wwwRoot:web服务器根目录
-    inc:头文件目录
+    wwwRoot:web服务器根目录，包含主页html文件和cgi程序(C语言实现)
     src:源文件目录
     文档:项目文档目录
 ## 使用方法
